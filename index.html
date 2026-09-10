@@ -253,7 +253,8 @@ html, body {
   height: min(950px, calc(100vh - 32px));
   height: min(950px, calc(100dvh - 32px));
   padding: 0;
-  overflow: visible;
+  overflow-x: visible;
+  overflow-y: auto;
   background: transparent;
   border: 0;
   border-radius: 0;
@@ -264,7 +265,7 @@ html, body {
 .history-change { position: absolute; top: 22px; right: 26px; max-width: 52%; z-index: 2; color: #1c2730; font-size: 30px; font-weight: 700; line-height: 1.15; text-align: right; pointer-events: none; }
 .team-wide #historyContent,
 .team-history-charts { height: 100%; min-height: 0; }
-.team-history-charts { display: grid; grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.team-history-charts { display: grid; grid-template-rows: repeat(3, minmax(260px, 1fr)); gap: 8px; }
 .team-history-section {
   display: flex;
   min-height: 0;
@@ -587,7 +588,7 @@ const url = "https://docs.google.com/spreadsheets/d/1QwQtftNvKBuVT1hTVxgilxiUdDT
 const historyUrls = {
   intel: url + "&gid=1591390740",
   vp: url + "&gid=890280555",
-  team_intel: "https://docs.google.com/spreadsheets/d/1Rid8YU8T8fBx2d-Ql6B5KtpDDhFdlG0ERfwZUspCTfs/export?format=csv&gid=0&range=A:I"
+  team_intel: "https://docs.google.com/spreadsheets/d/1Rid8YU8T8fBx2d-Ql6B5KtpDDhFdlG0ERfwZUspCTfs/export?format=csv&gid=0&range=A:K"
 };
 const teamInfoUrl = url + "&gid=861518513";
 const lastUpdateUrl = "https://docs.google.com/spreadsheets/d/1QwQtftNvKBuVT1hTVxgilxiUdDT_D1OEhA8ILINs0Wo/export?format=csv&gid=861518513&range=B6";
@@ -944,6 +945,12 @@ const historyContent = document.getElementById("historyContent");
 const historyCache = {};
 let historyChart = null, historyCloseTimer = null, historyScrollCloseTimer = null, historyPinned = false;
 let historyAnchor = null, historyAutoScrolling = false, historyRequestId = 0;
+const crabMarkerImage = new Image();
+crabMarkerImage.src = "img/bb-crab-marker-v2.png";
+crabMarkerImage.addEventListener("load", () => {
+  const chartList = Array.isArray(historyChart) ? historyChart : [historyChart];
+  chartList.filter(Boolean).forEach(chart => chart.draw());
+});
 const weekendBackgroundPlugin = {
   id: "weekendBackground",
   beforeDraw(chart, args, options) {
@@ -966,6 +973,28 @@ const weekendBackgroundPlugin = {
       ctx.fillStyle = day === 6 ? "rgba(255, 214, 64, 0.18)" : "rgba(235, 80, 80, 0.14)";
       ctx.fillRect(left, chartArea.top, right - left, chartArea.bottom - chartArea.top);
     });
+    if (crabMarkerImage.complete && crabMarkerImage.naturalWidth && options.crabDays) {
+      options.crabDays.forEach((isCrab, i) => {
+        if (!isCrab) return;
+        const right = Math.min(chartArea.right, scales.x.getPixelForValue(i));
+        const left = i > 0
+          ? Math.max(chartArea.left, scales.x.getPixelForValue(i - 1))
+          : chartArea.left;
+        const slotWidth = Math.max(0, right - left);
+        const maxWidth = slotWidth * 0.92;
+        const maxHeight = Math.min(slotWidth * 0.92, (chartArea.bottom - chartArea.top) * 0.38);
+        const imageRatio = crabMarkerImage.naturalWidth / crabMarkerImage.naturalHeight;
+        let width = Math.min(maxWidth, maxHeight * imageRatio);
+        let height = width / imageRatio;
+        if (height > maxHeight) {
+          height = maxHeight;
+          width = height * imageRatio;
+        }
+        ctx.globalAlpha = 0.7;
+        ctx.drawImage(crabMarkerImage, left + slotWidth - width / 2, chartArea.bottom - height, width, height);
+        ctx.globalAlpha = 1;
+      });
+    }
     ctx.restore();
   }
 };
@@ -1020,7 +1049,8 @@ function parseTeamIntelHistory(text) {
       raw,
       value,
       label: daysAgo === 1 ? "Včera" : `${daysAgo} d.`,
-      dayOfWeek: date.getDay()
+      dayOfWeek: date.getDay(),
+      isCrab: clean(columns[10]).toUpperCase() === "CRAB"
     };
   }).filter(Boolean).slice(-30);
   const sabotageIntel = parseColumn(4);
@@ -1138,7 +1168,10 @@ async function showHistory(anchor, pin = false) {
           color: "#149e9e",
           fill: "rgba(20,158,158,.18)",
           greenRange: null,
-          redAt2300: false
+          redAt2300: false,
+          maxValue: 2200,
+          cappedPointColor: "#d62828",
+          centerPointsInDay: true
         }
       ];
       if (charts.some(chart => !chart.points.length)) {
@@ -1197,7 +1230,11 @@ async function showHistory(anchor, pin = false) {
                 }
               } : {}
             },
-            weekendBackground: { days: chartConfig.points.map(p => p.dayOfWeek), greenRange: chartConfig.greenRange }
+            weekendBackground: {
+              days: chartConfig.points.map(p => p.dayOfWeek),
+              crabDays: chartConfig.points.map(p => p.isCrab),
+              greenRange: chartConfig.greenRange
+            }
           },
           scales: {
             x: {
