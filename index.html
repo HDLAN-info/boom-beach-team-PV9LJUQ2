@@ -1531,7 +1531,7 @@ let helpStartScroll = { x: 0, y: 0 };
 const helpTourSteps = [
   {
     title: "Týmové intely",
-    text: "Klepnutím nebo přejetím myší nad hodnotou týmových intelů zobrazíte dva grafy za posledních 30 dnů: stav intelů při ukončení operace a počet intelů použitých na sabotáže. Žluté podbarvení označuje sobotu a červené neděli. Zelené vodorovné pásmo v týmovém grafu zvýrazňuje doporučené rozmezí intelů. Klepnutím na libovolný bod zobrazíte v malém okénku příslušný den a přesnou hodnotu.",
+    text: "Klepnutím nebo přejetím myší nad hodnotou týmových intelů zobrazíte tři grafy za posledních 30 dnů: stav intelů při ukončení operace, počet intelů použitých na sabotáže a počet intelů nasbíraných týmem za jednotlivé dny. Žluté podbarvení označuje sobotu a červené neděli. Zelené vodorovné pásmo v týmovém grafu zvýrazňuje doporučené rozmezí intelů. Ikona kraba označuje dny, ve kterých probíhá event CRAB. Klepnutím na libovolný bod zobrazíte v malém okénku příslušný den a přesnou hodnotu.",
     selector: '[data-kind="team_intel"]',
     async prepare(anchor) { await showHistory(anchor, true); showRandomChartTooltips(); return historyPopup; }
   },
