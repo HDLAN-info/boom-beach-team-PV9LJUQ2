@@ -594,6 +594,7 @@ const teamInfoUrl = url + "&gid=861518513";
 const lastUpdateUrl = "https://docs.google.com/spreadsheets/d/1QwQtftNvKBuVT1hTVxgilxiUdDT_D1OEhA8ILINs0Wo/export?format=csv&gid=861518513&range=B6";
 const operationsScheduleUrl = "https://docs.google.com/spreadsheets/d/1qm-39cW6c-xFX_8Bw6od3LNd5QHvMqSrzHY4frf6OPI/gviz/tq?tqx=out:csv&gid=901175290&range=A:B";
 const teamStatsUrl = "https://docs.google.com/spreadsheets/d/1QwQtftNvKBuVT1hTVxgilxiUdDT_D1OEhA8ILINs0Wo/export?format=csv&gid=861518513&range=B8:B16";
+const dailyIntelAveragesUrl = "https://docs.google.com/spreadsheets/d/1Rid8YU8T8fBx2d-Ql6B5KtpDDhFdlG0ERfwZUspCTfs/gviz/tq?tqx=out:csv&sheet=prehledy&range=A4:B10";
 const dataCachePromise = fetch("data/cache.json", { cache: "no-store" }).then(response => {
   if (!response.ok) throw new Error(`Cache HTTP ${response.status}`);
   return response.json();
@@ -612,7 +613,7 @@ function loadLiveData(cacheKey, fallbackUrl) {
   return liveDataPromises.get(cacheKey);
 }
 
-const alwaysLiveKeys = new Set(["teamIntelHistoryCsv", "teamStatsCsv"]);
+const alwaysLiveKeys = new Set(["teamIntelHistoryCsv", "teamStatsCsv", "dailyIntelAveragesCsv"]);
 const playerUpdateKeys = new Set(["intelHistoryCsv", "vpHistoryCsv"]);
 const forceLiveData = new URLSearchParams(location.search).get("liveData") === "1";
 function normalizedData(value) { return String(value || "").trim().replace(/\r\n/g, "\n"); }
@@ -973,8 +974,19 @@ const weekendBackgroundPlugin = {
       ctx.fillStyle = day === 6 ? "rgba(255, 214, 64, 0.18)" : "rgba(235, 80, 80, 0.14)";
       ctx.fillRect(left, chartArea.top, right - left, chartArea.bottom - chartArea.top);
     });
-    if (crabMarkerImage.complete && crabMarkerImage.naturalWidth && options.crabDays) {
-      options.crabDays.forEach((isCrab, i) => {
+    ctx.restore();
+  }
+};
+const crabMarkerPlugin = {
+  id: "crabMarkers",
+  afterDatasetsDraw(chart, args, options) {
+    const { ctx, chartArea, scales } = chart;
+    const crabDays = chart.options.plugins.weekendBackground?.crabDays;
+    if (!chartArea || !scales.x || !crabMarkerImage.complete || !crabMarkerImage.naturalWidth || !crabDays) return;
+
+    ctx.save();
+    if (crabMarkerImage.complete && crabMarkerImage.naturalWidth && crabDays) {
+      crabDays.forEach((isCrab, i) => {
         if (!isCrab) return;
         const right = Math.min(chartArea.right, scales.x.getPixelForValue(i));
         const left = i > 0
@@ -1069,6 +1081,27 @@ function parseTeamIntelHistory(text) {
     dailyIntel
   };
 }
+function parseDailyIntelAverages(text) {
+  const averages = new Map();
+  const weekdayPatterns = [
+    [1, "ponděl"], [2, "úter"], [3, "střed"], [4, "čtvrt"],
+    [5, "pát"], [6, "sobot"], [0, "neděl"]
+  ];
+  text.trim().split(/\r?\n/).map(parseCSVRow).forEach(columns => {
+    const label = clean(columns[0]).toLocaleLowerCase("cs-CZ");
+    const value = Number(clean(columns[1]).replace(/\s/g, ""));
+    const match = weekdayPatterns.find(([, pattern]) => label.includes(pattern));
+    if (match && Number.isFinite(value)) averages.set(match[0], value);
+  });
+  return averages;
+}
+
+const dailyIntelAveragesPromise = loadData("dailyIntelAveragesCsv", dailyIntelAveragesUrl)
+  .then(parseDailyIntelAverages)
+  .catch(error => {
+    console.warn("Daily intel averages load failed", error);
+    return new Map();
+  });
 function parseWeeklyTeamIntelTotal(text) {
   const rows = text.trim().split(/\r?\n/).slice(1).map(parseCSVRow).filter(columns => {
     const raw = clean(columns[8]).replace(/\s/g, "");
@@ -1094,7 +1127,10 @@ async function loadHistory(kind) {
     const cacheKeys = { intel: "intelHistoryCsv", vp: "vpHistoryCsv", team_intel: "teamIntelHistoryCsv" };
     const historyTextPromise = loadData(cacheKeys[kind], historyUrls[kind]);
     historyCache[kind] = (kind === "team_intel"
-      ? historyTextPromise.then(parseTeamIntelHistory)
+      ? Promise.all([historyTextPromise, dailyIntelAveragesPromise]).then(([text, dailyIntelAverages]) => ({
+          ...parseTeamIntelHistory(text),
+          dailyIntelAverages
+        }))
       : Promise.all([historyTextPromise, lastUpdatePromise]).then(([text, lastUpdateDate]) => parseHistory(text, lastUpdateDate))
     ).catch(error => { delete historyCache[kind]; throw error; });
   }
@@ -1171,7 +1207,8 @@ async function showHistory(anchor, pin = false) {
           redAt2300: false,
           maxValue: 2200,
           cappedPointColor: "#d62828",
-          centerPointsInDay: true
+          centerPointsInDay: true,
+          averageValues: history.dailyIntel.map(point => history.dailyIntelAverages.get(point.dayOfWeek) ?? null)
         }
       ];
       if (charts.some(chart => !chart.points.length)) {
@@ -1187,7 +1224,7 @@ async function showHistory(anchor, pin = false) {
         const plottedPoints = chartConfig.points;
         return new Chart(historyPopup.querySelector(`canvas[data-chart-index="${index}"]`), {
         type: "line",
-        plugins: [weekendBackgroundPlugin],
+        plugins: [weekendBackgroundPlugin, crabMarkerPlugin],
         data: {
           labels: chartConfig.points.map(p => p.label),
           datasets: [{
@@ -1209,7 +1246,19 @@ async function showHistory(anchor, pin = false) {
               : (p && chartConfig.redAt2300 && p.value === 2300 ? "#d62828" : chartConfig.color)),
             pointHoverRadius: 7,
             borderWidth: 4
-          }]
+          }, ...(chartConfig.averageValues ? [{
+            label: "Denní průměr",
+            data: chartConfig.averageValues.map((value, pointIndex) => chartConfig.centerPointsInDay
+              ? { x: pointIndex - 0.5, y: value }
+              : value),
+            borderColor: "rgba(185, 190, 194, 0.3)",
+            backgroundColor: "transparent",
+            fill: false,
+            tension: 0.38,
+            pointRadius: 0,
+            pointHoverRadius: 0,
+            borderWidth: 3
+          }] : [])]
         },
         options: {
           responsive: true,
@@ -1220,6 +1269,7 @@ async function showHistory(anchor, pin = false) {
             tooltip: {
               titleFont: { size: 24 },
               bodyFont: { size: 24 },
+              filter(context) { return context.dataset.label !== "Denní průměr"; },
               callbacks: chartConfig.maxValue ? {
                 title(items) {
                   if (!items.length) return "";
@@ -1350,7 +1400,7 @@ async function showHistory(anchor, pin = false) {
     }
     historyChart = new Chart(wrap.querySelector("canvas"), {
       type: "line",
-      plugins: [weekendBackgroundPlugin],
+      plugins: [weekendBackgroundPlugin, crabMarkerPlugin],
       data: {
         labels: points.map(p => p.label),
         datasets: playerDatasets
@@ -1531,7 +1581,7 @@ let helpStartScroll = { x: 0, y: 0 };
 const helpTourSteps = [
   {
     title: "Týmové intely",
-    text: "Klepnutím nebo přejetím myší nad hodnotou týmových intelů zobrazíte tři grafy za posledních 30 dnů: stav intelů při ukončení operace, počet intelů použitých na sabotáže a počet intelů nasbíraných týmem za jednotlivé dny. Žluté podbarvení označuje sobotu a červené neděli. Zelené vodorovné pásmo v týmovém grafu zvýrazňuje doporučené rozmezí intelů. Ikona kraba označuje dny, ve kterých probíhá event CRAB. Klepnutím na libovolný bod zobrazíte v malém okénku příslušný den a přesnou hodnotu.",
+    text: "Klepnutím nebo přejetím myší nad hodnotou týmových intelů zobrazíte tři grafy za posledních 30 dnů: stav intelů při ukončení operace, počet intelů použitých na sabotáže a počet intelů nasbíraných týmem za jednotlivé dny. Žluté podbarvení označuje sobotu a červené neděli. Zelené vodorovné pásmo v týmovém grafu zvýrazňuje doporučené rozmezí intelů. Ikona kraba označuje dny, ve kterých probíhá event CRAB. Světle šedá čára v grafu nasbíraných intelů ukazuje průměrnou hodnotu pro jednotlivé dny v týdnu. Klepnutím na libovolný bod zobrazíte v malém okénku příslušný den a přesnou hodnotu.",
     selector: '[data-kind="team_intel"]',
     async prepare(anchor) { await showHistory(anchor, true); showRandomChartTooltips(); return historyPopup; }
   },
