@@ -264,7 +264,7 @@ html, body {
 .history-change { position: absolute; top: 22px; right: 26px; max-width: 52%; z-index: 2; color: #1c2730; font-size: 30px; font-weight: 700; line-height: 1.15; text-align: right; pointer-events: none; }
 .team-wide #historyContent,
 .team-history-charts { height: 100%; min-height: 0; }
-.team-history-charts { display: grid; grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.team-history-charts { display: grid; grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .team-history-section {
   display: flex;
   min-height: 0;
@@ -1010,8 +1010,8 @@ function parseTeamIntelHistory(text) {
   const chartClock = new Date();
   chartClock.setHours(12, 0, 0, 0);
   const rows = text.trim().split(/\r?\n/).slice(1).map(parseCSVRow);
-  const parseColumn = columnIndex => rows.map(columns => {
-    const date = parseCzechDate(columns[1]);
+  const parseColumn = (columnIndex, dateColumnIndex = 1) => rows.map(columns => {
+    const date = parseCzechDate(columns[dateColumnIndex]);
     const raw = clean(columns[columnIndex]);
     const value = Number(raw);
     if (!date || raw === "" || !Number.isFinite(value)) return null;
@@ -1028,9 +1028,15 @@ function parseTeamIntelHistory(text) {
     const daysAgo = sabotageIntel.length - index;
     point.label = daysAgo === 1 ? "Včera" : `${daysAgo} d.`;
   });
+  const dailyIntel = parseColumn(8, 6);
+  dailyIntel.forEach((point, index) => {
+    const daysAgo = dailyIntel.length - index;
+    point.label = daysAgo === 1 ? "Včera" : `${daysAgo} d.`;
+  });
   return {
     teamIntel: parseColumn(7),
-    sabotageIntel
+    sabotageIntel,
+    dailyIntel
   };
 }
 function parseWeeklyTeamIntelTotal(text) {
@@ -1125,6 +1131,14 @@ async function showHistory(anchor, pin = false) {
           maxValue: 1400,
           cappedPointColor: "#7b3fc6",
           centerPointsInDay: true
+        },
+        {
+          title: "CZECH - Nasbírané intely za posledních 30 dnů.",
+          points: history.dailyIntel,
+          color: "#149e9e",
+          fill: "rgba(20,158,158,.18)",
+          greenRange: null,
+          redAt2300: false
         }
       ];
       if (charts.some(chart => !chart.points.length)) {
