@@ -1028,7 +1028,7 @@ function parseTeamIntelHistory(text) {
     const daysAgo = sabotageIntel.length - index;
     point.label = daysAgo === 1 ? "Včera" : `${daysAgo} d.`;
   });
-  const dailyIntel = parseColumn(8, 6);
+  const dailyIntel = parseColumn(8);
   dailyIntel.forEach((point, index) => {
     const daysAgo = dailyIntel.length - index;
     point.label = daysAgo === 1 ? "Včera" : `${daysAgo} d.`;
