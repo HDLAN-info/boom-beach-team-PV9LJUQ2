@@ -1065,12 +1065,12 @@ function parseTeamIntelHistory(text) {
       isCrab: clean(columns[10]).toUpperCase() === "CRAB"
     };
   }).filter(Boolean).slice(-30);
-  const sabotageIntel = parseColumn(4);
+  const sabotageIntel = parseColumn(4).slice(1);
   sabotageIntel.forEach((point, index) => {
     const daysAgo = sabotageIntel.length - index;
     point.label = daysAgo === 1 ? "Včera" : `${daysAgo} d.`;
   });
-  const dailyIntel = parseColumn(8);
+  const dailyIntel = parseColumn(8).slice(1);
   dailyIntel.forEach((point, index) => {
     const daysAgo = dailyIntel.length - index;
     point.label = daysAgo === 1 ? "Včera" : `${daysAgo} d.`;
@@ -1251,7 +1251,7 @@ async function showHistory(anchor, pin = false) {
             data: chartConfig.averageValues.map((value, pointIndex) => chartConfig.centerPointsInDay
               ? { x: pointIndex - 0.5, y: value }
               : value),
-            borderColor: "rgba(185, 190, 194, 0.6)",
+            borderColor: "rgba(185, 190, 194, 0.7)",
             backgroundColor: "transparent",
             fill: false,
             tension: 0.38,
