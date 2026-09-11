@@ -745,6 +745,7 @@ loadData("teamInfoCsv", teamInfoUrl)
 
     const mappings = {
       force_points: ["forcepoints", true],
+      intels_per_day: ["intelsperday", true],
       tag: ["tag", false],
       members: ["members", false],
       entry_requirement: ["entryregurement", true],
@@ -761,15 +762,6 @@ loadData("teamInfoCsv", teamInfoUrl)
     });
   })
   .catch(error => console.error("Team info load failed", error));
-
-loadData("teamIntelHistoryCsv", historyUrls.team_intel)
-  .then(text => {
-    const teamIntelHistory = parseTeamIntelHistory(text).teamIntel;
-    const latestTeamIntel = teamIntelHistory[teamIntelHistory.length - 1];
-    const element = document.querySelector('[data-team-info="intels_per_day"]');
-    if (element && latestTeamIntel) element.textContent = formatTeamNumber(latestTeamIntel.value);
-  })
-  .catch(error => console.error("Latest team intel load failed", error));
 const lastUpdatePromise = loadData("lastUpdateCsv", lastUpdateUrl)
   .then(text => {
     const value = clean(parseCSVRow(text.trim())[0]);
