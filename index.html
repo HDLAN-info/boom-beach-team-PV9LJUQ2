@@ -375,6 +375,10 @@ html, body {
 .team-header-tab-back { left: 10.2%; width: 27.1%; }
 .team-header-tab-name { left: 37.3%; width: 27.2%; }
 .team-header-tab-elite { left: 64.4%; width: 27.1%; }
+.team-header-tab:focus-visible {
+  outline: 4px solid #fff;
+  outline-offset: -6px;
+}
 
 .team-info-value {
   position: absolute;
@@ -544,9 +548,9 @@ html, body {
 
 <div class="team-header" aria-label="Informace o týmu">
   <img class="team-header-image" src="img/team-header.png?v=20260911-1" alt="CZECH task force">
-  <span class="team-header-tab team-header-tab-back">ZPĚT na 🌐</span>
+  <a class="team-header-tab team-header-tab-back" href="https://boombeach.cz/">ZPĚT na 🌐</a>
   <span class="team-header-tab team-header-tab-name">CZECH</span>
-  <span class="team-header-tab team-header-tab-elite">CZECH ELITE</span>
+  <a class="team-header-tab team-header-tab-elite" href="https://u0rlr.boombeach.cz/">CZECH ELITE</a>
   <a class="team-action team-action-join" href="https://link.boombeach.com/?url=boombeach%3A%2F%2FViewTaskforce%3Ftag%3D%23PV9LJUQ2" aria-label="Připojit se k CZECH task force">PŘIPOJIT</a>
   <button id="operationsButton" class="team-action team-action-operations" type="button">OPERACE</button>
   <a class="team-action team-action-awards" href="diplomy.html">DIPLOMY</a>
