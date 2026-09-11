@@ -9,7 +9,7 @@ const sources = {
   lastUpdateCsv: "https://docs.google.com/spreadsheets/d/1QwQtftNvKBuVT1hTVxgilxiUdDT_D1OEhA8ILINs0Wo/export?format=csv&gid=861518513&range=B6",
   intelHistoryCsv: `${publishedBase}&gid=1591390740`,
   vpHistoryCsv: `${publishedBase}&gid=890280555`,
-  teamIntelHistoryCsv: "https://docs.google.com/spreadsheets/d/1VVmwTf-aAXgeE26cftc6z8zVlJz8w8fC5sNqnPWbGBY/export?format=csv&gid=1371018295&range=A:M",
+  teamIntelHistoryCsv: "https://docs.google.com/spreadsheets/d/1Rid8YU8T8fBx2d-Ql6B5KtpDDhFdlG0ERfwZUspCTfs/export?format=csv&gid=0&range=A:K",
   dailyIntelAveragesCsv: "https://docs.google.com/spreadsheets/d/1Rid8YU8T8fBx2d-Ql6B5KtpDDhFdlG0ERfwZUspCTfs/gviz/tq?tqx=out:csv&sheet=prehledy&range=A4:B10",
   operationsScheduleCsv: "https://docs.google.com/spreadsheets/d/1qm-39cW6c-xFX_8Bw6od3LNd5QHvMqSrzHY4frf6OPI/gviz/tq?tqx=out:csv&gid=901175290&range=A:B",
   teamStatsCsv: "https://docs.google.com/spreadsheets/d/1QwQtftNvKBuVT1hTVxgilxiUdDT_D1OEhA8ILINs0Wo/export?format=csv&gid=861518513&range=B8:B16"
