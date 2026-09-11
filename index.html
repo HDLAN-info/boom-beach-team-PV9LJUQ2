@@ -348,6 +348,33 @@ html, body {
   width: 100%;
   height: auto;
 }
+.team-header-tab {
+  position: absolute;
+  top: 0;
+  height: 20.5%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  color: #fff;
+  font-family: "Trebuchet MS", Arial, sans-serif;
+  font-size: 52.8px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  text-align: center;
+  text-decoration: none;
+  transform: translateY(10px);
+  text-shadow:
+    -2px -2px 0 #000,
+     2px -2px 0 #000,
+    -2px  2px 0 #000,
+     2px  2px 0 #000,
+     0 5px 0 rgba(0,0,0,.6);
+}
+.team-header-tab-back { left: 10.2%; width: 27.1%; }
+.team-header-tab-name { left: 37.3%; width: 27.2%; }
+.team-header-tab-elite { left: 64.4%; width: 27.1%; }
 
 .team-info-value {
   position: absolute;
@@ -516,7 +543,10 @@ html, body {
 <body>
 
 <div class="team-header" aria-label="Informace o týmu">
-  <img class="team-header-image" src="img/team-header.png?v=20260815-1" alt="CZECH task force">
+  <img class="team-header-image" src="img/team-header.png?v=20260911-1" alt="CZECH task force">
+  <span class="team-header-tab team-header-tab-back">ZPĚT na 🌐</span>
+  <span class="team-header-tab team-header-tab-name">CZECH</span>
+  <span class="team-header-tab team-header-tab-elite">CZECH ELITE</span>
   <a class="team-action team-action-join" href="https://link.boombeach.com/?url=boombeach%3A%2F%2FViewTaskforce%3Ftag%3D%23PV9LJUQ2" aria-label="Připojit se k CZECH task force">PŘIPOJIT</a>
   <button id="operationsButton" class="team-action team-action-operations" type="button">OPERACE</button>
   <a class="team-action team-action-awards" href="diplomy.html">DIPLOMY</a>
