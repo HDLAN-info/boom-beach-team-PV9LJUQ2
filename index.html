@@ -1194,12 +1194,14 @@ function parseTeamIntelHistory(text) {
   const chartClock = new Date();
   chartClock.setHours(12, 0, 0, 0);
   const rows = text.trim().split(/\r?\n/).slice(1).map(parseCSVRow);
-  const parseColumn = (columnIndex, dateColumnIndex = 1) => rows.map(columns => {
+  const parseColumn = (columnIndex, dateColumnIndex = 1, requiredColumnIndex = null) => rows.map(columns => {
     const date = parseCzechDate(columns[dateColumnIndex]);
     const raw = clean(columns[columnIndex]);
+    const requiredRaw = requiredColumnIndex === null ? "ready" : clean(columns[requiredColumnIndex]);
     const value = Number(raw);
-    if (!date || raw === "" || !Number.isFinite(value)) return null;
+    if (!date || raw === "" || requiredRaw === "" || !Number.isFinite(value)) return null;
     const daysAgo = Math.round((chartClock - date) / 86400000);
+    if (daysAgo < 0) return null;
     return {
       raw,
       value,
@@ -1208,7 +1210,7 @@ function parseTeamIntelHistory(text) {
       isCrab: clean(columns[10]).toUpperCase() === "CRAB"
     };
   }).filter(Boolean).slice(-30);
-  const sabotageIntel = parseColumn(4).slice(1);
+  const sabotageIntel = parseColumn(4, 1, 7).slice(1);
   sabotageIntel.forEach((point, index) => {
     const daysAgo = sabotageIntel.length - index;
     point.label = daysAgo === 1 ? "Včera" : `${daysAgo} d.`;
