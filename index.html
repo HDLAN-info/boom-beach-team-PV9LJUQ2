@@ -673,7 +673,7 @@ const historyUrls = {
 };
 const teamInfoUrl = url + "&gid=861518513";
 const lastUpdateUrl = "https://docs.google.com/spreadsheets/d/1QwQtftNvKBuVT1hTVxgilxiUdDT_D1OEhA8ILINs0Wo/export?format=csv&gid=861518513&range=B6";
-const operationsScheduleUrl = "https://docs.google.com/spreadsheets/d/1qm-39cW6c-xFX_8Bw6od3LNd5QHvMqSrzHY4frf6OPI/gviz/tq?tqx=out:csv&gid=901175290&range=A:B";
+const operationsScheduleUrl = url + "&gid=861518513&range=B20";
 const teamStatsUrl = "https://docs.google.com/spreadsheets/d/1QwQtftNvKBuVT1hTVxgilxiUdDT_D1OEhA8ILINs0Wo/export?format=csv&gid=861518513&range=B8:B16";
 const dailyIntelAveragesUrl = "https://docs.google.com/spreadsheets/d/1Rid8YU8T8fBx2d-Ql6B5KtpDDhFdlG0ERfwZUspCTfs/gviz/tq?tqx=out:csv&sheet=prehledy&range=A4:B10";
 const dataCachePromise = fetch("data/cache.json", { cache: "no-store" }).then(response => {
@@ -1641,13 +1641,12 @@ let operationsCountdownTimer = null;
 let operationsSchedule = [];
 
 function parseOperationsSchedule(text) {
-  return text.trim().split(/\r?\n/).slice(1).map(parseCSVRow).map(columns => {
-    const dateMatch = clean(columns[0]).match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
-    const timeMatch = clean(columns[1]).match(/^(\d{1,2}):(\d{2})$/);
-    if (!dateMatch || !timeMatch) return null;
-    const date = new Date(Number(dateMatch[3]), Number(dateMatch[2]) - 1, Number(dateMatch[1]), Number(timeMatch[1]), Number(timeMatch[2]), 0, 0);
-    return Number.isNaN(date.getTime()) ? null : date;
-  }).filter(Boolean).sort((a, b) => a - b);
+  const match = clean(parseCSVRow(text.trim().split(/\r?\n/)[0] || "")[0]).match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return [];
+  const now = new Date();
+  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate(), Number(match[1]), Number(match[2]), 0, 0);
+  if (next <= now) next.setDate(next.getDate() + 1);
+  return [next];
 }
 
 const operationsSchedulePromise = loadData("operationsScheduleCsv", operationsScheduleUrl)
@@ -1656,7 +1655,11 @@ const operationsSchedulePromise = loadData("operationsScheduleCsv", operationsSc
   .catch(error => { console.error("Operations schedule load failed", error); return []; });
 
 function getNextOperationTime(now = new Date()) {
-  return operationsSchedule.find(date => date > now) || null;
+  const configured = operationsSchedule[0];
+  if (!configured) return null;
+  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate(), configured.getHours(), configured.getMinutes(), 0, 0);
+  if (next <= now) next.setDate(next.getDate() + 1);
+  return next;
 }
 
 function updateOperationsCountdown() {
