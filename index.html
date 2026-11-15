@@ -1162,12 +1162,11 @@ function parseCzechDateTime(value) {
 
 function parseHistory(text, lastUpdateDate) {
   const rows = text.trim().split(/\r?\n/).map(parseCSVRow);
-  const headers = rows[0].slice(2).map(clean), byTag = new Map();
+  const byTag = new Map();
   rows.slice(1).forEach(c => {
-    const recentValues = c.slice(2).map((raw, index) => ({
+    const recentValues = c.slice(2).map(raw => ({
       raw: clean(raw),
-      value: Number(clean(raw)),
-      date: parseCzechDate(headers[index])
+      value: Number(clean(raw))
     })).filter(p => p.raw !== "" && Number.isFinite(p.value)).slice(0, 30).reverse();
     const chartClock = lastUpdateDate ? new Date(lastUpdateDate) : new Date();
     if (!lastUpdateDate) chartClock.setMinutes(chartClock.getMinutes() - 105);
@@ -1179,7 +1178,7 @@ function parseHistory(text, lastUpdateDate) {
       return {
         ...point,
         label: daysAgo === 1 ? "Včera" : `${daysAgo} d.`,
-        dayOfWeek: point.date ? point.date.getDay() : date.getDay()
+        dayOfWeek: date.getDay()
       };
     });
     byTag.set(clean(c[1]).toUpperCase(), points);
